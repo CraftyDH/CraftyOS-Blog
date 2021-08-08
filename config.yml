@@ -1,0 +1,27 @@
+baseURL: "https://craftydh.github.io/CraftyOS-Blog/"
+languageCode: en-us
+title: CraftyOS Blog
+
+theme: PaperMod
+
+languages:
+  en:
+    languageName: "English"
+    weight: 1
+    menu:
+      main:
+        - name: Archive
+          url: archives
+
+
+params:
+  author: CraftyDH
+
+  homeInfoParams:
+    title: CraftyOS Development Blog
+    content: >
+      Welcome to my blog on [CraftyOS](https://github.com/CraftyDH/CraftyOS).
+      
+      - This blog will follow my development of my OS for a school project, initially this will over a period of 16 weeks.
+
+      - I will try to post at least once a fortnight with my progress.
