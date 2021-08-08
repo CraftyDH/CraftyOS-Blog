@@ -45,3 +45,17 @@ To load the kernel into RAM I used the crate [xmas_elf](https://crates.io/crates
 ![bootloader screenshot](basic_bootloader.png "Bootloader screenshot")
 
 Despite this the kernel loads successfully and returns the product of 5 and 3. As such I will procede and maybe fix this if it starts breaking my kernel.
+
+## Loading GOP and making the ```println!``` macro
+
+As I knew how to use the UEFI crate grabbing the GOP framebuffer was easy peasy. I also added a function that would set the maximum size supported by the screen without exceding a threthhold such as 1920x1080.
+
+When passing the GOP infomation to my kernel, I had to deal with rust lifetimes, which I had never messed with before. However it was relativily strait forward to set everthing to ```'static```.
+
+For printing to the GOP buffer I once again used Poncho's tutorial as assistance of how to write to the memory address. However creating the ```println!``` macro proved challenging as I needed to have a static Global writer method, but I only got the GOP infomation in the kernel entry. To overcome this I made GOP an ```<Option<Gop>>``` and made the kernel set it first.
+
+I used ```core::ptr::copy``` to copy to video buffer from the bottom to the top over itself as a very efficient scroll mechanism. I also invented a ```colour!``` macro that simply sets the hexadecimal colour that the writer uses.
+
+To test this all out I created a for loop that prints Red, Green and Blue in their repective colours, as shown in the image below.  
+
+![kernel printing](rgb.png)
