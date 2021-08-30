@@ -57,3 +57,8 @@ To begin any project you must write "Hello World", therefore a VGA buffer writer
 As with my original attempt I created a `colour!` macro to change which colour is printed to the screen which is now limited to VGA colours. Along with that I implemented a `cursor!` macro to change the writers cursor position on the screen.  Both of these features are shown bellow where I wrote some pink text at the bottom of the screen.
 
 ![pink text screenshot](pink.png "pink text screenshot")
+
+### Testing
+Thankfully, the boot-loader crate that I have been using from Phillip's tutorial includes a test runner hook. The required items to complete the test suite were, a serial printer in order to print results back the the QEMU host, a bunch of tests and rewriting the OS to create standalone tests to prevent regressions. As the tutroial covered this very well I didn't add very much except for modularizing the code into a different directory structure. As shown in the below image the test suite prints the result of each test to the console via QEMU's serial interface, unforntantlyunfortunately there are errors however those are from the bootloader crate and as such I can't do anything about them.
+
+![testing screenshot](testing.png "testing screenshot")
