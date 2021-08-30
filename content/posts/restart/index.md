@@ -3,7 +3,7 @@ title: "Take 2, a fresh start..."
 date: 2021-08-22
 ---
 
-## Why must I restart
+## Why must I restart?
 
 Well quite simply UEFI is a pain. But seriously I spend 72 hours rewriting and rewriting my interrupt handlers to no avail. I believe that the problem was that I could not setup paging correctly and as such caused general protection faults and as I could not handle these faults I wasted so much time. Therefore in order to catch up to my schedule I have chosen to follow Philipp Oppermann's [blog_os](https://os.phil-opp.com/) to completion and then implement the other features on top. In order to prevent my assignment from being strait up plagiarism, I will add more features and things to my OS.
 
@@ -59,6 +59,7 @@ As with my original attempt I created a `colour!` macro to change which colour i
 ![pink text screenshot](pink.png "pink text screenshot")
 
 ### Testing
+
 Thankfully, the boot-loader crate that I have been using from Phillip's tutorial includes a test runner hook. The required items to complete the test suite were, a serial printer in order to print results back the the QEMU host, a bunch of tests and rewriting the OS to create standalone tests to prevent regressions. As the tutroial covered this very well I didn't add very much except for modularizing the code into a different directory structure. As shown in the below image the test suite prints the result of each test to the console via QEMU's serial interface, unforntantlyunfortunately there are errors however those are from the bootloader crate and as such I can't do anything about them.
 
 ![testing screenshot](testing.png "testing screenshot")
