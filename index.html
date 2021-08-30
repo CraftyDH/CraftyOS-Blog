@@ -70,10 +70,21 @@
 </article>
 <article class=post-entry>
 <header class=entry-header>
+<h2>Interrupts - Timers and Keyboard</h2>
+</header>
+<section class=entry-content>
+<p>Interrupts Interrupts are essential to a computer functioning, they allow your keyboard and mouse to interrupt the CPU and tell it that an event is waiting. This means that when a program is running the kernel gets control of the CPU so that it can process the keyboard event. This also enables the CPU to tell us when we do something stupid such as dividing 0 by 0.
+Exceptions To handle exceptions we must first program the IDT and GDT, checkout Phillip’s tutorial for more on those....</p>
+</section>
+<footer class=entry-footer>August 29, 2021&nbsp;·&nbsp;CraftyDH</footer>
+<a class=entry-link aria-label="post link to Interrupts - Timers and Keyboard" href=https://craftydh.github.io/CraftyOS-Blog/posts/interrupts/></a>
+</article>
+<article class=post-entry>
+<header class=entry-header>
 <h2>Take 2, a fresh start...</h2>
 </header>
 <section class=entry-content>
-<p>Why must I restart Well quite simply UEFI is a pain. But seriously I spend 72 hours rewriting and rewriting my interrupt handlers to no avail. I believe that the problem was that I could not setup paging correctly and as such caused general protection faults and as I could not handle these faults I wasted so much time. Therefore in order to catch up to my schedule I have chosen to follow Philipp Oppermann’s blog_os to completion and then implement the other features on top....</p>
+<p>Why must I restart? Well quite simply UEFI is a pain. But seriously I spend 72 hours rewriting and rewriting my interrupt handlers to no avail. I believe that the problem was that I could not setup paging correctly and as such caused general protection faults and as I could not handle these faults I wasted so much time. Therefore in order to catch up to my schedule I have chosen to follow Philipp Oppermann’s blog_os to completion and then implement the other features on top....</p>
 </section>
 <footer class=entry-footer>August 22, 2021&nbsp;·&nbsp;CraftyDH</footer>
 <a class=entry-link aria-label="post link to Take 2, a fresh start..." href=https://craftydh.github.io/CraftyOS-Blog/posts/restart/></a>
