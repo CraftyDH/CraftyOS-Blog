@@ -15,7 +15,7 @@
 <link rel=mask-icon href=https://craftydh.github.io/CraftyOS-Blog/safari-pinned-tab.svg>
 <meta name=theme-color content="#2e2e33">
 <meta name=msapplication-TileColor content="#2e2e33">
-<meta name=generator content="Hugo 0.87.0">
+<meta name=generator content="Hugo 0.88.1">
 <link rel=alternate type=application/rss+xml href=https://craftydh.github.io/CraftyOS-Blog/index.xml>
 <meta property="og:title" content="CraftyOS Blog">
 <meta property="og:description" content>
@@ -67,6 +67,16 @@
 <div class=social-icons>
 </div>
 </footer>
+</article>
+<article class=post-entry>
+<header class=entry-header>
+<h2>Memory - Paging and Global Allocator</h2>
+</header>
+<section class=entry-content>
+<p>Memory Memory is an essential component to a functioning OS, it allows for dynamic content such as strings and other data types which need to be stored on the heap. Therefore paging will first need to be implemented to be able to read and write to virtual memory locations which are stored at some other physical memory location. After this a Global Allocator which takes a page and builds a heap on it, for these purpose a linked list allocator will be used for allocations over 2 MiB, and a Fixed Size Allocator for smaller allocations allowing for fast allocations....</p>
+</section>
+<footer class=entry-footer>September 6, 2021&nbsp;·&nbsp;CraftyDH</footer>
+<a class=entry-link aria-label="post link to Memory - Paging and Global Allocator" href=https://craftydh.github.io/CraftyOS-Blog/posts/memory/></a>
 </article>
 <article class=post-entry>
 <header class=entry-header>
