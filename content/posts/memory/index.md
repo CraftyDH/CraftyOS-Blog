@@ -52,4 +52,4 @@ The expected output should be the string "This is a string." and as shown in the
 
 ## Challenges
 
-The biggest challenge that I had was t
+The biggest challenge that I had was to write a memory allocator that was capable of being fast. As this is a kernel slow response times are detremental to the rest of the OS. To combat this the allocator type I choses was the fixed size allocator as it contains lists of available blocks in power of 2 chunks, (8, 16, 32, 64, 128, 256, 512, 1024, 2048) Bytes. For allocations larger than this the fallbock linked list allocator is used.
