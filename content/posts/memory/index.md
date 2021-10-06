@@ -34,7 +34,7 @@ When I run this is Qemu the expected output is that we can read the same value f
 
 ## Global Allocator
 
-For the Global Allocator, I implemented three different implementations. Firstly a [bump allocator](https://os.phil-opp.com/allocator-designs/#bump-allocator) which provides fast performance, however memory can't be freed unless everything is freed due to it not tracking which memory it allocates to each process. Secondly a [linked list allocator](https://os.phil-opp.com/allocator-designs/#bump-allocator) which allows for tracking free space, however due to it having to track the entire list to find a suitable location a third type was implemented. The third type is a fixed size allocator, this is functionally very similar to a linked list allocator except each chunk is a fixed size, this allows fast allocations as the first available block can be popped of the list. A linked list allocator is used behind this the allocate more fixed size blocks if needed and for blocks over 2 KiB as those a rare.
+For the Global Allocator, I implemented three different implementations. Firstly a [bump allocator](https://os.phil-opp.com/allocator-designs/#bump-allocator) which provides fast performance, however memory can't be freed unless everything is freed due to it not tracking which memory it allocates to each process. Secondly a [linked list allocator](https://os.phil-opp.com/allocator-designs/#bump-allocator) which allows for tracking free space, however due to it having to track the entire list to find a suitable location a third type was implemented. The third type is a [fixed size allocator](https://os.phil-opp.com/allocator-designs/#fixed-size-block-allocator), this is functionally very similar to a linked list allocator except each chunk is a fixed size, this allows fast allocations as the first available block can be popped of the list. A linked list allocator is used behind this the allocate more fixed size blocks if needed and for blocks over 2 KiB as those a rare.
 
 In the following example I create a string (which is stored on the heap) and append various strings to it, this shows that the heap works and can grow an allocation. 
 ``` rust
@@ -49,3 +49,7 @@ println!("{}", string);
 The expected output should be the string "This is a string." and as shown in the following image that is what we see!
 
 !["Heap test"](string.png "Heap test")
+
+## Challenges
+
+The biggest challenge that I had was t
