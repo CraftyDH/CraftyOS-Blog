@@ -61,8 +61,11 @@ pub async fn print_keypresses() {
 
     // This loop should never return
     while let Some(scancode) = scancodes.next().await {
+        // Process the next scancode
         if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
+            // If there is a new key available
             if let Some(key) = keyboard.process_keyevent(key_event) {
+                // Print out the key to the screen
                 match key {
                     DecodedKey::Unicode(character) => print!("{}", character),
                     DecodedKey::RawKey(key) => print!("{:?}", key),
@@ -75,11 +78,50 @@ pub async fn print_keypresses() {
 
 ## Disk IO via ATA
 
-### Todo!
+### How does ATA work?
+To read/write to an a disk you must first know which ATA bus it is connected to. There are 4 locations ATA 0 Primary/ Secondary and ATA 1 Primary/ Secondary. Then you can ask the device to read or write bytes to the disk, afterwords you can either poll the disk until it says ready (which is what I implemented) or you can ask it send you an interrupt when it is ready. Once the drive is ready you can read/write **all** 512 bytes from the sector, it is important that all 512 bytes are used otherwise the drive might malfunction. 
 
-  
+### Disk enumeration
+To enumerate each disk I identified each of the 4 ATA drives and then printed it's disk name if there was a disk connected as shown in the snippet and screenshot below. The ERROR shown in the screenshot is because there was no disk connected to ATA 1. 
 
-## PCI Enumeration
+!["ATA disk enumeration screenshot"](ATA.png "ATA disk enumeration screenshot")
 
-### Todo! 
+```rust
+fn read_disks() {
+	// ATA 0 lives on IO port 0x1F0
+	let mut ata_0_master = ATA::new(0x1F0, true);
+	let mut ata_0_slave  = ATA::new(0x1F0, false);
+	// ATA 1 lives on IO port 0x170
+	let mut ata_1_master = ATA::new(0x170, true);
+	let mut ata_1_slave  = ATA::new(0x170, true);
+	
+	// Indentify disks
+	let ata_0_master_info = ata_0_master.identify(Vec::with_capacity(512));
+	let ata_0_slave_info = ata_0_slave.identify(Vec::with_capacity(512));
+	let ata_1_master_info = ata_1_master.identify(Vec::with_capacity(512));
+	let ata_1_slave_info = ata_1_slave.identify(Vec::with_capacity(512));
+
+	// Print info for each disk
+	for (ata_info, name) in [
+		(ata_0_master_info, "ATA 0 Master"),
+		(ata_0_slave_info, "ATA 0 Slave"),
+		(ata_1_master_info, "ATA 1 Master"),
+		(ata_1_slave_info, "ATA 1 Slave"),
+	] {
+        // Was there a disk on this bus
+		if  let  Some(info) =  ata_info {
+			println!("Found drive on {}", name);
+			println!(
+				" Serial: {}\n Model: {}",
+				str::from_utf8(&info.serial).unwrap_or("INVALID SERIAL"),
+				str::from_utf8(&info.model).unwrap_or("INVALID MODEL"),
+			);
+        } else {
+            println!("No drive found on {}", name)
+        }
+	 }
+}
+```
+### Interrupts Challenge
+Initially this code created a DOUBLE_FAULT exception in QEMU but worked in VirtualBox. This made me think that the drive was sending an interrupt which caused the crash as I wasn't handling it. Eventually I found out that the interrupts were at interrupt number 14 and 15, however I wasn't able to set them. The reason for this was that they were offsets from the PIC chip which meant that they started at offset 0x20. With this change the interrupt handlers worked and in QEMU I got an interrupt and was able to continue execution.
 
