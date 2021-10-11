@@ -1,0 +1,142 @@
+<!doctype html><html lang=en dir=auto>
+<head><meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<meta name=robots content="index, follow">
+<title>Preemptive Multitasking | CraftyOS Blog</title>
+<meta name=keywords content>
+<meta name=description content="Co-operative vs preemptive multitasking In my OS I have already implemented co-operative multitasking however there are a number of reasons why I wanted to implement preemptive multitasking. Firstly since each task could run for an infinite amount of time it would be terrible for one rogue process to bring down the entire system. Secondly in order for tasks such as keyboard and mouse to run I had to add yield_now().await() all around my code base to share time.">
+<meta name=author content="CraftyDH">
+<link rel=canonical href=https://craftydh.github.io/CraftyOS-Blog/posts/preemptive_multitasking/>
+<link crossorigin=anonymous href=/CraftyOS-Blog/assets/css/stylesheet.min.6cba0d81b5f3f42bb578d49f402ba4175aa72b43def148780b8ad714c957c6f5.css integrity="sha256-bLoNgbXz9Cu1eNSfQCukF1qnK0Pe8Uh4C4rXFMlXxvU=" rel="preload stylesheet" as=style>
+<script defer crossorigin=anonymous src=/CraftyOS-Blog/assets/js/highlight.min.7680afc38aa6b15ddf158a4f3780b7b1f7dde7e91d26f073e6229bb7a0793c92.js integrity="sha256-doCvw4qmsV3fFYpPN4C3sffd5+kdJvBz5iKbt6B5PJI=" onload=hljs.initHighlightingOnLoad()></script>
+<link rel=icon href=https://craftydh.github.io/CraftyOS-Blog/favicon.ico>
+<link rel=icon type=image/png sizes=16x16 href=https://craftydh.github.io/CraftyOS-Blog/favicon-16x16.png>
+<link rel=icon type=image/png sizes=32x32 href=https://craftydh.github.io/CraftyOS-Blog/favicon-32x32.png>
+<link rel=apple-touch-icon href=https://craftydh.github.io/CraftyOS-Blog/apple-touch-icon.png>
+<link rel=mask-icon href=https://craftydh.github.io/CraftyOS-Blog/safari-pinned-tab.svg>
+<meta name=theme-color content="#2e2e33">
+<meta name=msapplication-TileColor content="#2e2e33">
+<meta name=generator content="Hugo 0.88.1">
+<meta property="og:title" content="Preemptive Multitasking">
+<meta property="og:description" content="Co-operative vs preemptive multitasking In my OS I have already implemented co-operative multitasking however there are a number of reasons why I wanted to implement preemptive multitasking. Firstly since each task could run for an infinite amount of time it would be terrible for one rogue process to bring down the entire system. Secondly in order for tasks such as keyboard and mouse to run I had to add yield_now().await() all around my code base to share time.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://craftydh.github.io/CraftyOS-Blog/posts/preemptive_multitasking/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2021-10-10T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-10-10T00:00:00+00:00">
+<meta name=twitter:card content="summary">
+<meta name=twitter:title content="Preemptive Multitasking">
+<meta name=twitter:description content="Co-operative vs preemptive multitasking In my OS I have already implemented co-operative multitasking however there are a number of reasons why I wanted to implement preemptive multitasking. Firstly since each task could run for an infinite amount of time it would be terrible for one rogue process to bring down the entire system. Secondly in order for tasks such as keyboard and mouse to run I had to add yield_now().await() all around my code base to share time.">
+<script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Posts","item":"https://craftydh.github.io/CraftyOS-Blog/posts/"},{"@type":"ListItem","position":2,"name":"Preemptive Multitasking","item":"https://craftydh.github.io/CraftyOS-Blog/posts/preemptive_multitasking/"}]}</script>
+<script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"Preemptive Multitasking","name":"Preemptive Multitasking","description":"Co-operative vs preemptive multitasking In my OS I have already implemented co-operative multitasking however there are a number of reasons why I wanted to implement preemptive multitasking. Firstly since each task could run for an infinite amount of time it would be terrible for one rogue process to bring down the entire system. Secondly in order for tasks such as keyboard and mouse to run I had to add yield_now().await() all around my code base to share time.","keywords":[],"articleBody":"Co-operative vs preemptive multitasking In my OS I have already implemented co-operative multitasking however there are a number of reasons why I wanted to implement preemptive multitasking. Firstly since each task could run for an infinite amount of time it would be terrible for one rogue process to bring down the entire system. Secondly in order for tasks such as keyboard and mouse to run I had to add yield_now().await() all around my code base to share time. This made reading the code more challenging and it was still easy to accidentally add an expensive operation without a yield. Thirdly, in order to add multi processor functionality later on a proper process switcher would be needed and rewriting a code base for a different scheduler type would take forever.\nImplementing preemptive multitasking To implement the TaskManager I was able to copy over many of the tools I wrote for the co-operative scheduler however I actually found it easier to understand how it worked compared to rust async/await. This is likely because fundamentally process switching involves getting a process switch interrupt then saving the current process CPU state and restoring the new processes state.\nThe initialization of a process was challenging as I had to look up the C calling convention in order to pass arguments. I so far only implemented the basic fact that you can pass 64 bit numbers or pointers in certain registers. I was then able to prefill the CPU state with the parameters instead of 0’s when the task was created. Unfortunately this means only C safe types can be passed through this hacky solution, however I was able to ensure that the parameters passed were of the same type as the function requested via generic parameters as shown below.\nimpl Task { /// Safety for set_args_n  /// As long as each type is not longer than 64 bits which would require 2  pub fn set_args_3A, B, C(\u0026mut self, func: extern \"C\" fn(A, B, C), a: A, b: B, c: C) { // Set the instruction pointer to the function entry point  self.state_isf.instruction_pointer = VirtAddr::from_ptr(func as *const usize); // Unsafely set the CPU registers to the parameters  unsafe { self.state_reg.rdi = transmute_copy(\u0026a); self.state_reg.rsi = transmute_copy(\u0026b); self.state_reg.rdx = transmute_copy(\u0026c); } } } The switching code was much simpler boiling down to save current state then get the next process and restore it’s expected CPU state. A simplified code example is shown below.\nimpl TaskManager { /// Called by the interrupt handler \tpub fn switch_task(\u0026mut self, stack_frame: \u0026mut InterruptStackFrame, regs: \u0026mut Registers) { let mut task_queue = self.task_queue.lock(); // If we havn't instantiated any tasks return \tif self.tasks.is_empty() { return } // Ask the current task handler to save its stack_frame and CPU registers \tself.tasks.get_mut(\u0026self.current_task).unwrap().save(stack_frame, regs); // Push old task to the back of the queue \ttask_queue.push_back(self.current_task); // Can we get a new task \tif let Some(next_task_id) = task_queue.pop_front() { // Get the task from the tasks list \tlet next_task = self.tasks.get(\u0026next_task_id).unwrap(); // Set the current task id to the new task we are executing \tself.current_task = next_task_id; unsafe { // Get a mutable pointer to the interrupt stack frame \tlet isf = stack_frame.as_mut().extract_inner(); // Write the new tasks isf to to CPU's isf \twrite_volatile( isf as *mut InterruptStackFrameValue, next_task.stack_isf.clone() ) // Set the CPU registers to the new processes state \t*regs = next_task.state_regs.clone(); } } } }\t","wordCount":"560","inLanguage":"en","datePublished":"2021-10-10T00:00:00Z","dateModified":"2021-10-10T00:00:00Z","author":{"@type":"Person","name":"CraftyDH"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://craftydh.github.io/CraftyOS-Blog/posts/preemptive_multitasking/"},"publisher":{"@type":"Organization","name":"CraftyOS Blog","logo":{"@type":"ImageObject","url":"https://craftydh.github.io/CraftyOS-Blog/favicon.ico"}}}</script>
+</head>
+<body id=top>
+<script>localStorage.getItem("pref-theme")==="dark"?document.body.classList.add('dark'):localStorage.getItem("pref-theme")==="light"?document.body.classList.remove('dark'):window.matchMedia('(prefers-color-scheme: dark)').matches&&document.body.classList.add('dark')</script>
+<noscript>
+<style type=text/css>#theme-toggle,.top-link{display:none}</style>
+<style>@media(prefers-color-scheme:dark){:root{--theme:#1d1e20;--entry:#2e2e33;--primary:rgba(255, 255, 255, 0.84);--secondary:rgba(255, 255, 255, 0.56);--tertiary:rgba(255, 255, 255, 0.16);--content:rgba(255, 255, 255, 0.74);--hljs-bg:#2e2e33;--code-bg:#37383e;--border:#333}.list{background:var(--theme)}.list:not(.dark)::-webkit-scrollbar-track{background:0 0}.list:not(.dark)::-webkit-scrollbar-thumb{border-color:var(--theme)}}</style>
+</noscript>
+<header class=header>
+<nav class=nav>
+<div class=logo>
+<a href=https://craftydh.github.io/CraftyOS-Blog/ accesskey=h title="CraftyOS Blog (Alt + H)">CraftyOS Blog</a>
+<span class=logo-switches>
+<button id=theme-toggle accesskey=t title="(Alt + T)"><svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+</span>
+</div>
+<ul id=menu>
+<li>
+<a href=https://craftydh.github.io/CraftyOS-Blog/archives title=Archive>
+<span>Archive</span>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<main class=main>
+<article class=post-single>
+<header class=post-header>
+<h1 class=post-title>
+Preemptive Multitasking
+</h1>
+<div class=post-meta>October 10, 2021&nbsp;·&nbsp;CraftyDH
+</div>
+</header>
+<div class=post-content><h2 id=co-operative-vs-preemptive-multitasking>Co-operative vs preemptive multitasking<a hidden class=anchor aria-hidden=true href=#co-operative-vs-preemptive-multitasking>#</a></h2>
+<p>In my OS I have already implemented co-operative multitasking however there are a number of reasons why I wanted to implement preemptive multitasking. Firstly since each task could run for an infinite amount of time it would be terrible for one rogue process to bring down the entire system. Secondly in order for tasks such as keyboard and mouse to run I had to add <code>yield_now().await()</code> all around my code base to share time. This made reading the code more challenging and it was still easy to accidentally add an expensive operation without a yield. Thirdly, in order to add multi processor functionality later on a proper process switcher would be needed and rewriting a code base for a different scheduler type would take forever.</p>
+<h2 id=implementing-preemptive-multitasking>Implementing preemptive multitasking<a hidden class=anchor aria-hidden=true href=#implementing-preemptive-multitasking>#</a></h2>
+<p>To implement the TaskManager I was able to copy over many of the tools I wrote for the co-operative scheduler however I actually found it easier to understand how it worked compared to rust async/await. This is likely because fundamentally process switching involves getting a process switch interrupt then saving the current process CPU state and restoring the new processes state.</p>
+<p>The initialization of a process was challenging as I had to look up the <a href=https://wiki.osdev.org/Calling_Conventions>C calling convention</a> in order to pass arguments. I so far only implemented the basic fact that you can pass 64 bit numbers or pointers in certain registers. I was then able to prefill the CPU state with the parameters instead of 0&rsquo;s when the task was created. Unfortunately this means only C safe types can be passed through this hacky solution, however I was able to ensure that the parameters passed were of the same type as the function requested via generic parameters as shown below.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#66d9ef>impl</span> Task {
+    <span style=color:#e6db74>/// Safety for set_args_n
+</span><span style=color:#e6db74></span>    <span style=color:#e6db74>/// As long as each type is not longer than 64 bits which would require 2
+</span><span style=color:#e6db74></span>    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> <span style=color:#a6e22e>set_args_3</span><span style=color:#f92672>&lt;</span>A, B, C<span style=color:#f92672>&gt;</span>(<span style=color:#f92672>&amp;</span><span style=color:#66d9ef>mut</span> self, func: <span style=color:#a6e22e>extern</span> <span style=color:#e6db74>&#34;C&#34;</span> <span style=color:#66d9ef>fn</span>(A, B, C), a: <span style=color:#a6e22e>A</span>, b: <span style=color:#a6e22e>B</span>, c: <span style=color:#a6e22e>C</span>) {
+		    <span style=color:#75715e>// Set the instruction pointer to the function entry point
+</span><span style=color:#75715e></span>        self.state_isf.instruction_pointer <span style=color:#f92672>=</span> VirtAddr::from_ptr(func <span style=color:#66d9ef>as</span> <span style=color:#f92672>*</span><span style=color:#66d9ef>const</span> <span style=color:#66d9ef>usize</span>);
+        <span style=color:#75715e>// Unsafely set the CPU registers to the parameters
+</span><span style=color:#75715e></span>        <span style=color:#66d9ef>unsafe</span> {
+            self.state_reg.rdi <span style=color:#f92672>=</span> transmute_copy(<span style=color:#f92672>&amp;</span>a);
+            self.state_reg.rsi <span style=color:#f92672>=</span> transmute_copy(<span style=color:#f92672>&amp;</span>b);
+            self.state_reg.rdx <span style=color:#f92672>=</span> transmute_copy(<span style=color:#f92672>&amp;</span>c);
+        }
+    }
+}
+</code></pre></div><p>The switching code was much simpler boiling down to save current state then get the next process and restore it&rsquo;s expected CPU state. A simplified code example is shown below.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-rust data-lang=rust><span style=color:#66d9ef>impl</span> TaskManager {
+	<span style=color:#e6db74>/// Called by the interrupt handler
+</span><span style=color:#e6db74></span>	<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> <span style=color:#a6e22e>switch_task</span>(<span style=color:#f92672>&amp;</span><span style=color:#66d9ef>mut</span> self, stack_frame: <span style=color:#66d9ef>&amp;</span><span style=color:#a6e22e>mut</span> InterruptStackFrame, regs: <span style=color:#66d9ef>&amp;</span><span style=color:#a6e22e>mut</span> Registers) {
+		<span style=color:#66d9ef>let</span> <span style=color:#66d9ef>mut</span> task_queue <span style=color:#f92672>=</span> self.task_queue.lock();
+		<span style=color:#75715e>// If we havn&#39;t instantiated any tasks return
+</span><span style=color:#75715e></span>		<span style=color:#66d9ef>if</span> self.tasks.is_empty() {
+			<span style=color:#66d9ef>return</span>
+		}
+		<span style=color:#75715e>// Ask the current task handler to save its stack_frame and CPU registers
+</span><span style=color:#75715e></span>		self.tasks.get_mut(<span style=color:#f92672>&amp;</span>self.current_task).unwrap().save(stack_frame, regs);
+		<span style=color:#75715e>// Push old task to the back of the queue
+</span><span style=color:#75715e></span>		task_queue.push_back(self.current_task);
+
+		<span style=color:#75715e>// Can we get a new task
+</span><span style=color:#75715e></span>		<span style=color:#66d9ef>if</span> <span style=color:#66d9ef>let</span> Some(next_task_id) <span style=color:#f92672>=</span> task_queue.pop_front() {
+			<span style=color:#75715e>// Get the task from the tasks list
+</span><span style=color:#75715e></span>			<span style=color:#66d9ef>let</span> next_task <span style=color:#f92672>=</span> self.tasks.get(<span style=color:#f92672>&amp;</span>next_task_id).unwrap();
+			<span style=color:#75715e>// Set the current task id to the new task we are executing
+</span><span style=color:#75715e></span>			self.current_task <span style=color:#f92672>=</span> next_task_id;
+
+			<span style=color:#66d9ef>unsafe</span> {
+				<span style=color:#75715e>// Get a mutable pointer to the interrupt stack frame
+</span><span style=color:#75715e></span>				<span style=color:#66d9ef>let</span> isf <span style=color:#f92672>=</span> stack_frame.as_mut().extract_inner();
+				<span style=color:#75715e>// Write the new tasks isf to to CPU&#39;s isf
+</span><span style=color:#75715e></span>				write_volatile(
+					isf <span style=color:#66d9ef>as</span> <span style=color:#f92672>*</span><span style=color:#66d9ef>mut</span> InterruptStackFrameValue,
+					next_task.stack_isf.clone()
+				)
+				<span style=color:#75715e>// Set the CPU registers to the new processes state
+</span><span style=color:#75715e></span>				<span style=color:#f92672>*</span>regs <span style=color:#f92672>=</span> next_task.state_regs.clone();
+			}
+		}
+	}
+}			
+</code></pre></div>
+</div>
+<footer class=post-footer>
+</footer>
+</article>
+</main>
+<footer class=footer>
+<span>&copy; 2021 <a href=https://craftydh.github.io/CraftyOS-Blog/>CraftyOS Blog</a></span>
+<span>
+Powered by
+<a href=https://gohugo.io/ rel="noopener noreferrer" target=_blank>Hugo</a> &
+        <a href=https://git.io/hugopapermod rel=noopener target=_blank>PaperMod</a>
+</span>
+</footer>
+<a href=#top aria-label="go to top" title="Go to Top (Alt + G)">
+<button class=top-link id=top-link type=button accesskey=g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentcolor"><path d="M12 6H0l6-6z"/></svg>
+</button>
+</a>
+<script>let menu=document.getElementById('menu');menu.scrollLeft=localStorage.getItem("menu-scroll-position"),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)},document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener("click",function(b){b.preventDefault();var a=this.getAttribute("href").substr(1);window.matchMedia('(prefers-reduced-motion: reduce)').matches?document.querySelector(`[id='${decodeURIComponent(a)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(a)}']`).scrollIntoView({behavior:"smooth"}),a==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${a}`)})})</script>
+<script>var mybutton=document.getElementById("top-link");window.onscroll=function(){document.body.scrollTop>800||document.documentElement.scrollTop>800?(mybutton.style.visibility="visible",mybutton.style.opacity="1"):(mybutton.style.visibility="hidden",mybutton.style.opacity="0")}</script>
+<script>document.getElementById("theme-toggle").addEventListener("click",()=>{document.body.className.includes("dark")?(document.body.classList.remove('dark'),localStorage.setItem("pref-theme",'light')):(document.body.classList.add('dark'),localStorage.setItem("pref-theme",'dark'))})</script>
+</body>
+</html>
