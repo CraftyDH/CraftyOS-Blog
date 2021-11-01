@@ -63,3 +63,35 @@ impl TaskManager {
 	}
 }			
 ```
+
+## Testing the system
+To test the system I created two functions that print out "a" and "b" respectfully as shown below. This successfully prints out a's and b's after each other. As such the system is shwitching between tasks via the timer successfully. The new system also seemlessly intergrates with my existing async code via an async thread.
+
+```rust
+fn main() {
+	... Init code
+
+    let mut task_manager = TASKMANAGER.lock();
+
+	task_manager.spawn(Task::new(a));
+	task_manager.spawn(Task::new(b));
+}
+
+fn a() {
+	unsafe { asm!("hlt") };
+	println!("a");
+}
+
+fn b() {
+	unsafe { asm!("hlt") };
+	println!("a");
+}
+```
+
+## Challenges
+There is an error caused by rust doing certain optimisations on debug mode. I am not quite sure how to fix it yet. However my temperary measure is to use the --release flag, as that works perfectly fine. As shown below I introduced a warning for myself just before the problematic code runs incase it does crash due to this problem.
+
+![The error](stupid_error.png "grrr")
+
+## Timeline
+As I have now completed preemtive multiasking a new problem occurs. How does a thread commicate with the process manager? Using syscalls of cause, and as such that is what I will work on for the next week. This unfortunately means delaying networking and filesystems, but it will make a much better OS.

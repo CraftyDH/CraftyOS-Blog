@@ -1,5 +1,5 @@
 ---
-title: "Holidays -- Async/Await, Disk IO and PCI Enumeration"
+title: "Holidays — Async/Await, Disk IO and PCI Enumeration"
 date: 2021-10-03
 ---
 
@@ -125,3 +125,56 @@ fn read_disks() {
 ### Interrupts Challenge
 Initially this code created a DOUBLE_FAULT exception in QEMU but worked in VirtualBox. This made me think that the drive was sending an interrupt which caused the crash as I wasn't handling it. Eventually I found out that the interrupts were at interrupt number 14 and 15, however I wasn't able to set them. The reason for this was that they were offsets from the PIC chip which meant that they started at offset 0x20. With this change the interrupt handlers worked and in QEMU I got an interrupt and was able to continue execution.
 
+## PCI Enumeration
+To enumerate the PCI devices in quite simple, you use for loops. In this code snippet below, we ask each PCI device to tell us its infomation. If none exists on that address a 0 or 0xFFFF is returned. I used wyoos [PCI enumeration](https://www.youtube.com/watch?v=GE7iO2vlLD4&list=PLHh55M_Kq4OApWScZyPl5HhgsTJS9MZ6M&index=11) tutorial as a starting point for this section. 
+
+This code snipped shows how I went about enurmerating the PCI devices. The screenshot below also shows that it successfully works.
+```rust
+pub fn select_drivers(&mut self) {
+	for bus in 0..8 {
+		for device in 0..32 {
+			for function in 0..8 {
+				// Get device info
+				let mut dev = self.get_device_descriptor(bus, device, function);
+
+				if dev.vendor_id == 0x0000 || dev.vendor_id == 0xFFFF {
+					// There is no function here :(
+					continue;
+				}
+
+				// Enermuerate over each base address that the device has
+				for bar_num in 0..6 {
+					let bar =
+						match self.get_base_address_register(bus, device, function, bar_num) {
+							Some(bar) => bar,
+							None => continue,
+						};
+
+					// Ensure there is an address
+					// We currently only have support for IO not mmap
+					if bar.address != 0
+						&& (bar.register_type == BaseAddressRegisterType::InputOutput)
+					{
+						dev.port_base = bar.address.into()
+					}
+				}
+
+				println!(
+					"PCI BUS {}, DEVICE {}, FUNCTION {} = VENDOR {:#X}{:X}, DEVICE {:#X}{:02X}",
+					bus & 0xFF,
+					device & 0xFF,
+					function & 0xFF,
+					(dev.vendor_id & 0xFF00) >> 8,
+					dev.vendor_id & 0xFF,
+					(dev.device_id & 0xFF00) >> 8,
+					dev.device_id & 0xFF
+				);
+			}
+		}
+	}
+}
+```
+![PCI enumeration](PCI.png "PCI enumeration")
+
+## Timeline update
+In the holidays I completed many of the tasks from my [Timeline](https://craftydh.github.io/CraftyOS-Blog/posts/restart/#revised-timeline). However as stated earlier the USB spec is over 600 pages and as such I will be skipping it. As cooperative multiasking has it's weeknesses next week I will work on preemtive multitasking instead of moving onto creating a filesystem.

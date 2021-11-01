@@ -9,7 +9,7 @@ Interrupts are essential to a computer functioning, they allow your keyboard and
 
 ### Timeline
 
-In this week the interrupts and exceptions were quite easy to write with Phillop's tutorials help. As such the project [Timeline](https://craftydh.github.io/CraftyOS-Blog/posts/restart/#revised-timeline) is currently on track to begin work on paging and memory for next week.
+In this week the interrupts and exceptions were quite easy to write with Phillop's tutorials help. As a result I also didn't have any notable challenges. The project is on track with the [Timeline](https://craftydh.github.io/CraftyOS-Blog/posts/restart/#revised-timeline) and I will begin work on paging and memory next week.
 
 ## Exceptions
 

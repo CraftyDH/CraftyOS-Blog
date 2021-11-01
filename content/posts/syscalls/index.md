@@ -28,7 +28,7 @@ unsafe {
 
 As expected we get to number 0xDEADBEEF printed to the console as shown below.
 
-INSERT IMAGE HERE
+!["Echo screenshot"](echo.png "Echo screenshot")
 
 ## Spawn Thread
 This is a very usefull syscall that programs can call. It allows a process to spawn any C function as a new thread, in the thread pool. As I wanted to have closures that can capture surrounting variables to work I needed additional context other than a function pointer. To achieve this I looked into the rust source code for how they handle POSIX threads.
@@ -63,6 +63,15 @@ extern "C" fn thread_bootstraper(main: *mut usize) {
     quit_function()
 }
 ```
-In this function the boxed function is passed in RAX as per the C calling convention. It is then reconstructed and then called from Rust code. The was also a problem which occured when code exited the function and caused a page fault by running non-existed code. I solved this by adding a quit_function call.
+In this function the boxed function is passed in RAX as per the C calling convention. It is then reconstructed and then called from Rust code. The was also a problem which occured when code exited the function and caused a page fault by running non-existed code as shown below. I solved this by adding a quit_function call at the end of the bootstraper.
 
-//TODO: Insert Fail pic here.
+!["page fault"](pagefault_noquit.png "page fault")
+
+## Yield Now
+This is a simple syscall that allows a thread to voluntarily give up its time slice. This improves system performance instead of threads wasting time waiting for an event to occur. Additionally I created helper functions for all syscalls that can be called instead of manually calling the interrupt.
+
+## Challenges
+As mentioned earlier the page fault on a task exiting code segment was quite annoying. By employing a syscall instead of a function it is possible to gain access to the stack frame and straight away switch to the next available task.
+
+## Timeline
+As I have other classwork to do next week this will be the final entry. The means that I unfortunatly won't have time to implement networking or a filesystem. However by inserting syscalls into the timeline has been benifitial as it allows for greater asynconous capabilities as demonstated above.
